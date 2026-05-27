@@ -1,71 +1,55 @@
-
 import os
 import json
 import requests
 from datetime import datetime
+
 print("NEW VERSION LOADED")
-timestamp = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
+
+timestamp = datetime.utcnow().strftime(
+    "%Y-%m-%d_%H-%M-%S"
+)
 
 log_file = f"debug_{timestamp}.txt"
 
 logs=[]
 
+
 def log(msg):
 
-    now=datetime.utcnow().strftime("%H:%M:%S")
+    now=datetime.utcnow().strftime(
+        "%H:%M:%S"
+    )
 
-    line=f"[{now}] {msg}"
-
-    logs.append(line)
+    logs.append(
+        f"[{now}] {msg}"
+    )
 
 
 log("===== BOT STARTED =====")
 
 
-BOT_TOKEN=os.getenv("BOT_TOKEN")
-
-founders_raw=os.getenv(
-    "FOUNDERS_JSON",
-    "[]"
-)
-
-log(
-    f"BOT TOKEN EXISTS: "
-    f"{BOT_TOKEN is not None}"
-)
-
-log(
-    f"FOUNDERS RAW: "
-    f"{founders_raw}"
+BOT_TOKEN=os.getenv(
+    "BOT_TOKEN"
 )
 
 founders=json.loads(
-    founders_raw
-)
-
-log(
-    f"FOUNDERS COUNT: "
-    f"{len(founders)}"
+    os.getenv(
+        "FOUNDERS_JSON",
+        "[]"
+    )
 )
 
 today=datetime.utcnow().date()
 
-log(
-    f"TODAY UTC: {today}"
-)
+log(f"TODAY:{today}")
+
 
 
 def send(chat_id,message):
 
-    log(
-        f"Sending to "
-        f"{chat_id}"
-    )
-
     url=(
         f"https://api.telegram.org/"
-        f"bot{BOT_TOKEN}"
-        f"/sendMessage"
+        f"bot{BOT_TOKEN}/sendMessage"
     )
 
     response=requests.post(
@@ -77,27 +61,26 @@ def send(chat_id,message):
     )
 
     log(
-        f"Telegram Status:"
-        f"{response.status_code}"
+        f"Sent->{chat_id}"
+    )
+
+    log(
+        f"Status:{response.status_code}"
     )
 
     try:
 
         log(
-            f"Telegram response:"
-            f"{response.json()}"
+            response.text
         )
 
     except:
 
         log(
-            "Telegram parse error"
+            "response parse error"
         )
 
 
-log(
-    "Loading compliance.json"
-)
 
 with open(
     "compliance.json"
@@ -106,59 +89,132 @@ with open(
     data=json.load(f)
 
 
-log(
-    "Compliance loaded"
-)
-
 tasks=[]
 
 
+####################################
+# MONTHLY TASKS
+####################################
+
 for item in data["monthly"]:
 
+    month=today.month
+    year=today.year
+
     event_date=datetime(
-        today.year,
-        today.month,
+
+        year,
+        month,
         item["day"]
+
     ).date()
 
-    task={
 
-        "title":
-        item["title"],
+    if event_date<today:
 
-        "date":
+        month+=1
+
+        if month>12:
+
+            month=1
+            year+=1
+
+
+        event_date=datetime(
+
+            year,
+            month,
+            item["day"]
+
+        ).date()
+
+
+    task=item.copy()
+
+    task["date"]=(
         event_date.strftime(
             "%Y-%m-%d"
         )
-    }
+    )
+
+    task["source"]="monthly"
 
     tasks.append(task)
 
     log(
-        f"Monthly task:"
-        f"{task}"
+        f"Monthly:{task}"
     )
 
+
+
+####################################
+# YEARLY TASKS
+####################################
 
 for item in data["yearly"]:
 
-    tasks.append(item)
+
+    event_date=datetime(
+
+        today.year,
+
+        item["month"],
+
+        item["day"]
+
+    ).date()
+
+
+    if event_date<today:
+
+        event_date=datetime(
+
+            today.year+1,
+
+            item["month"],
+
+            item["day"]
+
+        ).date()
+
+
+    task=item.copy()
+
+    task["date"]=(
+        event_date.strftime(
+            "%Y-%m-%d"
+        )
+    )
+
+    task["source"]="yearly"
+
+    tasks.append(task)
 
     log(
-        f"Yearly task:"
-        f"{item}"
+        f"Yearly:{task}"
     )
 
 
-reminders=[]
+
+####################################
+# BUILD REMINDERS
+####################################
+
+
+message_parts=[]
 
 
 for task in tasks:
 
+
     event_date=datetime.strptime(
+
         task["date"],
+
         "%Y-%m-%d"
+
     ).date()
+
 
     diff=(
         event_date-today
@@ -166,58 +222,122 @@ for task in tasks:
 
 
     log(
-        f"{task['title']} "
-        f"diff={diff}"
+        f"{task['title']} diff={diff}"
     )
 
 
-    # testing mode
-    if diff>=0:
+    show=False
+
+
+    ################################
+    # MONTHLY
+    ################################
+
+    if task["source"]=="monthly":
+
+        if 0<=diff<=10:
+
+            show=True
+
+
+    ################################
+    # YEARLY
+    ################################
+
+    elif task["source"]=="yearly":
+
+        if diff>=0:
+
+            show=True
+
+
+
+    if show:
+
 
         if diff==0:
 
             msg=(
-                f"⚠️ TODAY:"
-                f"{task['title']}"
+                "⚠ TODAY\n"
             )
 
         else:
 
             msg=(
-                f"{task['title']}"
-                f" ({diff} days)"
+                f"⏳ {diff} days left\n"
             )
 
-        reminders.append(msg)
+
+        msg+=(
+            f"\n"
+            f"Category: "
+            f"{task['category']}\n\n"
+
+            f"Task: "
+            f"{task['title']}\n\n"
+
+            f"Note: "
+            f"{task['note']}"
+        )
 
 
-log(
-    f"REMINDERS:"
-    f"{len(reminders)}"
-)
+        message_parts.append(
+            msg
+        )
 
 
-if reminders:
 
-    message=(
-        "📌 Compliance Reminder\n\n"
+####################################
+# SEND
+####################################
+
+
+if message_parts:
+
+
+    final_message=(
+
+        "📌 Founder Compliance\n\n"
+
         +
-        "\n".join(reminders)
+
+        "\n\n----------------\n\n".join(
+
+            message_parts
+
+        )
+
+    )
+
+
+    log(
+        "Sending final message"
     )
 
 
     for founder in founders:
 
+
         send(
+
             founder["chat_id"],
-            message
+
+            final_message
+
         )
+
 
 else:
 
     log(
-        "No reminders"
+        "No reminders today"
     )
+
+
+
+####################################
+# DEBUG
+####################################
 
 
 log(
@@ -236,3 +356,8 @@ with open(
         f.write(
             row+"\n"
         )
+
+
+print(
+    f"DEBUG FILE CREATED:{log_file}"
+)
