@@ -2,7 +2,7 @@ name: Compliance Reminder
 
 on:
   schedule:
-    - cron: "30 3 * * *"
+    - cron: "23 8 * * *"
 
   workflow_dispatch:
 
