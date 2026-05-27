@@ -80,3 +80,10 @@ if reminders:
             founder["chat_id"],
             message
         )
+
+for founder in founders:
+
+        send(
+            founder["chat_id"],
+            'Testing'
+        )
