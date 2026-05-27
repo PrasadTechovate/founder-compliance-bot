@@ -1,3 +1,5 @@
+raise Exception("TEST CRASH")
+
 import os
 import json
 import requests
