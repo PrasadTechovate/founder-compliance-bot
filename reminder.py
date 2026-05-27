@@ -2,7 +2,7 @@ import os
 import json
 import requests
 from datetime import datetime
-
+print("NEW VERSION LOADED")
 timestamp = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
 
 log_file = f"debug_{timestamp}.txt"
