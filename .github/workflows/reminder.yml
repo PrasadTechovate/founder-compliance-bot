@@ -1,9 +1,6 @@
 name: Compliance Reminder
 
 on:
-  schedule:
-    - cron: "23 8 * * *"
-
   workflow_dispatch:
 
 jobs:
@@ -26,3 +23,9 @@ jobs:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           FOUNDERS_JSON: ${{ secrets.FOUNDERS_JSON }}
         run: python reminder.py
+
+      - name: Upload debug file
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-log
+          path: debug_*.txt
