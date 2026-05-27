@@ -1,0 +1,19 @@
+{
+  "monthly":[
+    {"title":"Update accounting & inventory","day":1},
+    {"title":"Prepare GSTR-1 invoices","day":9},
+    {"title":"File GSTR-1","day":11},
+    {"title":"Prepare GSTR-3B","day":19},
+    {"title":"File GSTR-3B","day":20}
+  ],
+
+  "yearly":[
+    {"title":"Prepare LLP Form 11","date":"2026-04-20"},
+    {"title":"File LLP Form 11","date":"2026-05-30"},
+    {"title":"Prepare Income Tax Return","date":"2026-06-15"},
+    {"title":"File ITR-5","date":"2026-07-31"},
+    {"title":"Prepare LLP Form 8","date":"2026-09-20"},
+    {"title":"File LLP Form 8","date":"2026-10-30"},
+    {"title":"Year-end accounting review","date":"2026-12-28"}
+  ]
+}
