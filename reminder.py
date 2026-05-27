@@ -3,29 +3,69 @@ import json
 import requests
 from datetime import datetime
 
-print("===== BOT STARTED =====")
+timestamp = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-founders_raw = os.getenv("FOUNDERS_JSON","[]")
+log_file = f"debug_{timestamp}.txt"
 
-print("BOT_TOKEN loaded:", BOT_TOKEN is not None)
-print("FOUNDERS_JSON raw:")
-print(founders_raw)
+logs=[]
 
-founders = json.loads(founders_raw)
+def log(msg):
 
-print("Founders count:", len(founders))
+    now=datetime.utcnow().strftime("%H:%M:%S")
 
-today = datetime.utcnow().date()
+    line=f"[{now}] {msg}"
 
-print("UTC date:", today)
+    logs.append(line)
+
+
+log("===== BOT STARTED =====")
+
+
+BOT_TOKEN=os.getenv("BOT_TOKEN")
+
+founders_raw=os.getenv(
+    "FOUNDERS_JSON",
+    "[]"
+)
+
+log(
+    f"BOT TOKEN EXISTS: "
+    f"{BOT_TOKEN is not None}"
+)
+
+log(
+    f"FOUNDERS RAW: "
+    f"{founders_raw}"
+)
+
+founders=json.loads(
+    founders_raw
+)
+
+log(
+    f"FOUNDERS COUNT: "
+    f"{len(founders)}"
+)
+
+today=datetime.utcnow().date()
+
+log(
+    f"TODAY UTC: {today}"
+)
 
 
 def send(chat_id,message):
 
-    print(f"\nSending message to {chat_id}")
+    log(
+        f"Sending to "
+        f"{chat_id}"
+    )
 
-    url=f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    url=(
+        f"https://api.telegram.org/"
+        f"bot{BOT_TOKEN}"
+        f"/sendMessage"
+    )
 
     response=requests.post(
         url,
@@ -35,26 +75,42 @@ def send(chat_id,message):
         }
     )
 
-    print("Telegram status:",response.status_code)
+    log(
+        f"Telegram Status:"
+        f"{response.status_code}"
+    )
 
     try:
-        print("Telegram response:",response.json())
+
+        log(
+            f"Telegram response:"
+            f"{response.json()}"
+        )
+
     except:
-        print("Could not parse response")
+
+        log(
+            "Telegram parse error"
+        )
 
 
-print("\nLoading compliance.json")
+log(
+    "Loading compliance.json"
+)
 
-with open("compliance.json") as f:
+with open(
+    "compliance.json"
+) as f:
+
     data=json.load(f)
 
-print("Loaded JSON:")
-print(json.dumps(data,indent=2))
 
+log(
+    "Compliance loaded"
+)
 
 tasks=[]
 
-print("\nGenerating monthly tasks")
 
 for item in data["monthly"]:
 
@@ -64,32 +120,37 @@ for item in data["monthly"]:
         item["day"]
     ).date()
 
-    generated_task={
-        "title":item["title"],
-        "date":event_date.strftime("%Y-%m-%d")
+    task={
+
+        "title":
+        item["title"],
+
+        "date":
+        event_date.strftime(
+            "%Y-%m-%d"
+        )
     }
 
-    tasks.append(generated_task)
+    tasks.append(task)
 
-    print("Added monthly task:")
-    print(generated_task)
+    log(
+        f"Monthly task:"
+        f"{task}"
+    )
 
-
-print("\nAdding yearly tasks")
 
 for item in data["yearly"]:
 
     tasks.append(item)
 
-    print("Added yearly task:")
-    print(item)
+    log(
+        f"Yearly task:"
+        f"{item}"
+    )
 
-
-print("\nTotal tasks:",len(tasks))
 
 reminders=[]
 
-print("\nChecking reminders")
 
 for task in tasks:
 
@@ -98,53 +159,53 @@ for task in tasks:
         "%Y-%m-%d"
     ).date()
 
-    diff=(event_date-today).days
+    diff=(
+        event_date-today
+    ).days
 
-    print(
-        f"Task: {task['title']} | "
-        f"Date: {event_date} | "
-        f"Diff:{diff}"
+
+    log(
+        f"{task['title']} "
+        f"diff={diff}"
     )
 
-    # TEST MODE
-    if diff >=0:
+
+    # testing mode
+    if diff>=0:
 
         if diff==0:
 
-            msg=f"⚠️ TODAY: {task['title']}"
+            msg=(
+                f"⚠️ TODAY:"
+                f"{task['title']}"
+            )
 
         else:
 
-            msg=f"{task['title']} ({diff} days)"
+            msg=(
+                f"{task['title']}"
+                f" ({diff} days)"
+            )
 
         reminders.append(msg)
 
-        print("Reminder added:")
-        print(msg)
 
-
-print("\nFinal reminders:")
-
-for r in reminders:
-    print(r)
+log(
+    f"REMINDERS:"
+    f"{len(reminders)}"
+)
 
 
 if reminders:
 
     message=(
-        "📌 Compliance Reminder\n\n"+
+        "📌 Compliance Reminder\n\n"
+        +
         "\n".join(reminders)
     )
 
-    print("\nMessage to send:")
-    print(message)
 
     for founder in founders:
-
-        print(
-            "\nFounder:",
-            founder
-        )
 
         send(
             founder["chat_id"],
@@ -153,7 +214,24 @@ if reminders:
 
 else:
 
-    print("\nNo reminders today")
+    log(
+        "No reminders"
+    )
 
 
-print("\n===== BOT FINISHED =====")
+log(
+    "===== BOT FINISHED ====="
+)
+
+
+with open(
+    log_file,
+    "w",
+    encoding="utf-8"
+) as f:
+
+    for row in logs:
+
+        f.write(
+            row+"\n"
+        )
