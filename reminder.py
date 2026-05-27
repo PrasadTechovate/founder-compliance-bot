@@ -9,7 +9,7 @@ timestamp = datetime.utcnow().strftime(
     "%Y-%m-%d_%H-%M-%S"
 )
 
-log_file = f"debug_{timestamp}.txt"
+log_file=f"debug_{timestamp}.txt"
 
 logs=[]
 
@@ -41,7 +41,9 @@ founders=json.loads(
 
 today=datetime.utcnow().date()
 
-log(f"TODAY:{today}")
+log(
+    f"TODAY:{today}"
+)
 
 
 
@@ -53,20 +55,29 @@ def send(chat_id,message):
     )
 
     response=requests.post(
+
         url,
+
         data={
+
             "chat_id":chat_id,
+
             "text":message
+
         }
+
     )
+
 
     log(
         f"Sent->{chat_id}"
     )
 
     log(
-        f"Status:{response.status_code}"
+        f"Status:"
+        f"{response.status_code}"
     )
+
 
     try:
 
@@ -89,6 +100,7 @@ with open(
     data=json.load(f)
 
 
+
 tasks=[]
 
 
@@ -98,21 +110,28 @@ tasks=[]
 
 for item in data["monthly"]:
 
+
     month=today.month
     year=today.year
+
 
     event_date=datetime(
 
         year,
+
         month,
+
         item["day"]
 
     ).date()
 
 
+
     if event_date<today:
 
+
         month+=1
+
 
         if month>12:
 
@@ -123,10 +142,13 @@ for item in data["monthly"]:
         event_date=datetime(
 
             year,
+
             month,
+
             item["day"]
 
         ).date()
+
 
 
     task=item.copy()
@@ -151,6 +173,7 @@ for item in data["monthly"]:
 # YEARLY TASKS
 ####################################
 
+
 for item in data["yearly"]:
 
 
@@ -165,7 +188,9 @@ for item in data["yearly"]:
     ).date()
 
 
+
     if event_date<today:
+
 
         event_date=datetime(
 
@@ -178,6 +203,7 @@ for item in data["yearly"]:
         ).date()
 
 
+
     task=item.copy()
 
     task["date"]=(
@@ -188,7 +214,9 @@ for item in data["yearly"]:
 
     task["source"]="yearly"
 
+
     tasks.append(task)
+
 
     log(
         f"Yearly:{task}"
@@ -197,11 +225,11 @@ for item in data["yearly"]:
 
 
 ####################################
-# BUILD REMINDERS
+# BUILD MESSAGE
 ####################################
 
 
-message_parts=[]
+reminders=[]
 
 
 for task in tasks:
@@ -216,39 +244,47 @@ for task in tasks:
     ).date()
 
 
+
     diff=(
+
         event_date-today
+
     ).days
 
-
-    log(
-        f"{task['title']} diff={diff}"
-    )
 
 
     show=False
 
 
+
     ################################
+
     # MONTHLY
+
     ################################
 
     if task["source"]=="monthly":
+
 
         if 0<=diff<=10:
 
             show=True
 
 
+
     ################################
+
     # YEARLY
+
     ################################
 
     elif task["source"]=="yearly":
 
+
         if diff>=0:
 
             show=True
+
 
 
 
@@ -257,33 +293,66 @@ for task in tasks:
 
         if diff==0:
 
-            msg=(
-                "⚠ TODAY\n"
-            )
+            icon="🔴"
+            status="TODAY"
+
+        elif diff<=3:
+
+            icon="🔴"
+            status=f"{diff}d"
+
+        elif diff<=10:
+
+            icon="🟡"
+            status=f"{diff}d"
 
         else:
 
-            msg=(
-                f"⏳ {diff} days left\n"
-            )
+            icon="🟢"
+            status=f"{diff}d"
 
 
-        msg+=(
-            f"\n"
-            f"Category: "
-            f"{task['category']}\n\n"
 
-            f"Task: "
-            f"{task['title']}\n\n"
+        reminders.append({
 
-            f"Note: "
-            f"{task['note']}"
-        )
+            "days":diff,
+
+            "message":
+
+            f"{icon} {status} | "
+
+            f"{task['title']} "
+
+            f"• {task['category']}\n"
+
+            f"📝 {task['note']}"
+
+        })
 
 
-        message_parts.append(
-            msg
-        )
+
+####################################
+# SORT BY CLOSEST
+####################################
+
+
+reminders=sorted(
+
+    reminders,
+
+    key=lambda x:x["days"]
+
+)
+
+
+
+message_parts=[
+
+    x["message"]
+
+    for x in reminders
+
+]
 
 
 
@@ -297,21 +366,26 @@ if message_parts:
 
     final_message=(
 
-        "📌 Founder Compliance\n\n"
+        "😊 Good morning Founder\n\n"
+
+        "📌 Compliance Brief\n"
+
+        "━━━━━━━━━━━━\n\n"
 
         +
 
-        "\n\n----------------\n\n".join(
+        "\n\n".join(
 
             message_parts
 
         )
 
-    )
+        +
 
+        "\n\n━━━━━━━━━━━━\n"
 
-    log(
-        "Sending final message"
+        "Stay compliant • Avoid penalties ✅"
+
     )
 
 
@@ -328,6 +402,7 @@ if message_parts:
 
 
 else:
+
 
     log(
         "No reminders today"
@@ -346,16 +421,23 @@ log(
 
 
 with open(
+
     log_file,
+
     "w",
+
     encoding="utf-8"
+
 ) as f:
 
+
     for row in logs:
+
 
         f.write(
             row+"\n"
         )
+
 
 
 print(
